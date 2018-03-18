@@ -203,6 +203,9 @@ class Select extends Component {
 			optionsVisibile: false,
 		});
 	}
+	handleMouseOut() {
+		console.log("leaving");
+	}
 
 	render() {
 		return (
@@ -210,12 +213,14 @@ class Select extends Component {
 				backgroundColor: 'white',
 				width: '320pt',
 			}}
-			onBlur={this.handleBlur} >
+			onFocus={this.handleFocus}
+			onMouseLeave={this.handleBlur}>
+			
 				<div className='select-grid'>
 					<div className='select-input'>	
 						<input type='text' placeholder={this.props.placeholder} 
 							onChange={this.onChange} value={this.state.value}
-							onFocus={this.handleFocus}/>
+						/>
 					</div>
 					<div className='select-caret'>
 						<DropdownCaret></DropdownCaret>
