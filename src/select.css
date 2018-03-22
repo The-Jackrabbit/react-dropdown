@@ -61,11 +61,6 @@ li.selected {
 	color: white;
 }
 
-li:hover {
-	background-color: rgb(103, 177, 252);
-	color: white;
-}
-
 ul {
 	padding: 0pt;
 	margin: 0pt;

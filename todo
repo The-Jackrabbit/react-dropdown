@@ -1,0 +1,4 @@
+2) check rerender for options works for all use cases
+
+- animate dropdown caret to rotate on focus
+- keydown to navigate

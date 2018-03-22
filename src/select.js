@@ -7,7 +7,8 @@ import './select.css';
 let propTypes = {
 	placeholder: PropTypes.string,
 	data: PropTypes.array,
-	selected: PropTypes.string
+	selected: PropTypes.string,
+	testing: PropTypes.bool,
 };
 let defaultProps = {
 	placeholder: 'Select',
@@ -22,7 +23,8 @@ let defaultProps = {
 		{label: 'Idaho', value:'ID'},
 		{label: 'Wyoming', value:'WY'},
 		{label: 'Utah', value:'UT'},
-	]
+	],
+	testing: false,
 };
 
 class Select extends Component {
@@ -30,150 +32,105 @@ class Select extends Component {
 		super(props);
 
 		this.state = {
-			selected: null,
-			filteredResults: [],
-			filteredResultsMarkup: [],
-			value: undefined,
-			optionsVisibile: false,
+			data: [],
+			// Dom/event state
+			optionsVisible: false,
+			currentlyEngaged: false,
+			// Stored values
+			value: '',
+			highlightedOption: {
+				value: undefined,
+				label: undefined,
+			},
+			highlightedIndex: 0,
+			selectedOption: {
+				value: undefined,
+				label: undefined,
+			},
+			resultLength: 0,
+			
 		};
 
-		this.onChange = this.onChange.bind(this);
+		this.changeText = this.changeText.bind(this);
 		this.clickOption = this.clickOption.bind(this);
 
-		this.handleFocus = this.handleFocus.bind(this);
-		this.handleBlur = this.handleBlur.bind(this);
-	}
-	componentWillMount() {
-		let markup = [];
-		let data = this.props.data;
+		this.handleTextMouseDown = this.handleTextMouseDown.bind(this);
+		this.handleTextBlur = this.handleTextBlur.bind(this);
+		this.handleOptionsMouseOver = this.handleOptionsMouseOver.bind(this);
+		this.handleOptionsMouseOut = this.handleOptionsMouseOut.bind(this);
+		this.handleKeyPress = this.handleKeyPress.bind(this);
+		this.handleArrowKey = this.handleArrowKey.bind(this);
+		this.handleEnterKey = this.handleEnterKey.bind(this);
+		this.handleOptionHover = this.handleOptionHover.bind(this);
 
-		data.forEach((element) => {
-			element.selected = this.props.selected === element.value;
-			markup.push(
-				<Option value={element.value} key={element.value} 
-					onClick={this.clickOption} 
-					label={element.label} selected={element.selected}>
-				</Option>
-			);
+	}
+	// Lifecycle Hooks
+	componentWillMount() {
+		let data = [];
+		this.props.data.map((element, index) => {
+			element.isVisible = true;
+			element.isHovered = this.props.selected.value === element.value;
+			element.index = index;
+			data.push(element);
 		});
 
 		this.setState({
 			...this.props,
+			resultLength: data.length,
 			data: data,
-			filteredResults: data,
-			filteredResultsMarkup: markup,
 		});
 	}
-
-	clickOption(event) {
-		const chosenValue = event.target.getAttribute('value');
-		const chosenLabel = event.target.innerHTML;
-		this.setState({
-			selected: chosenValue,
-		});
-		let filteredResults = this.state.filteredResults;
+	
+	// Business Logic
+	getFirstMatchOnType(inputText) {
+		let matchingResult;
 		
-		let newlyFilteredResults = this.updateFilteredResultsWithClick(chosenValue);
-		this.updateResultsMarkup(this.state.filteredResults);
-
-		this.setState({
-			value: chosenLabel,
-		});
-	}
-
-	onChange(event) {
-		let inputText = event.target.value;
-
-		let firstMatchingValue = this.getFirstMatchOnType(inputText);
-		let newlyFilteredResults = this.updateFilteredResultsWithText(firstMatchingValue, inputText);
-		this.updateResultsMarkup(newlyFilteredResults);
-
-		this.setState({
-			value: inputText,
-		});
-	}
-
-	getFirstMatchOnType(value) {
-		let inputText = value.toLowerCase();
-		let matchingResult = {
-			value: null
-		};
-		let i = 0;
-		while (matchingResult.value === null && i < this.state.data.length) {
-			let label = this.state.data[i].label.toLowerCase();
-			let match = this.wordsMatch(inputText, label);
+		for (let i = 0 ; i < this.state.data.length; i++) {
+			let label = this.state.data[i].label;
+			let match = this.wordsMatch(inputText.toLowerCase(), label.toLowerCase());
 
 			if (match) {
 				matchingResult = this.state.data[i];
+				break;
 			}
-			i++;
 		}
 
-		this.setState({
-			selected: matchingResult.value
-		});
-
-		return matchingResult.value;
+		if (this.matchingResult) {
+			this.setState({
+				selected: {...matchingResult}, 
+			});
+		}
+		
+		return matchingResult;
 	}
 
-	updateFilteredResultsWithClick(newSelectedValue) {
-		let filteredResults = [];
-		
-		this.state.filteredResults.forEach((element) => {
-			element.selected = (element.value === newSelectedValue);
-			filteredResults.push(element);
-		});
+	updateResults(newSelectedValue, inputText) {
+		let data = this.state.data;
+		let resultLength = 0;
+		data.map((element, i) => {
+			let {label, value, isVisible, isHovered, index} = element;
+			let match = true;
 
-		this.setState({
-			filteredResults: filteredResults,
-		});
-
-		return filteredResults;
-	}
-
-	updateFilteredResultsWithText(newSelectedValue, inputText) {
-		inputText = inputText.toLowerCase();
-		let filteredResults = [];
-		
-		this.state.data.forEach((element) => {
-			let optionLabel = element.label.toLowerCase();
-			let match = this.wordsMatch(inputText, optionLabel);
-
-			element.selected = (element.value === newSelectedValue);
-
-			if (match) {
-				filteredResults.push(element);
+			if (inputText) {
+				match = this.wordsMatch(inputText.toLowerCase(), label.toLowerCase()) 
+						|| this.wordsMatch(inputText.toLowerCase(), value.toLowerCase());
 			}
-		});
-
-		this.setState({
-			filteredResults: filteredResults,
-		});
-
-		return filteredResults;
-	}
-
-	updateResultsMarkup(newlyFilteredResults) {
-		let filteredResultsMarkup = [];
-		newlyFilteredResults.forEach(({label, value, selected}) => {
-			filteredResultsMarkup.push(
-				<Option value={value} key={value} onClick={this.clickOption} label={label} selected={selected}></Option>
-			);
+			
+			element.isHovered = (this.state.highlightedIndex === index);
+			element.isVisible = match;
+			resultLength += 1*match;
 		});
 		this.setState({
-			filteredResultsMarkup: <ul>{filteredResultsMarkup}</ul>,
+			data: data,
+			resultLength: resultLength,
 		});
 	}
 
 	// Utility Functions
-	wordsMatch(inputText, label) {
+	wordsMatch(inputText, optionLabel, optionValue) {
 		let match = false;
 
-		if (label.length <= inputText.length) {
-			match = inputText.includes(label);
-		} else {
-			match = label.includes(inputText);
-		}
+		match = optionLabel.includes(inputText)||optionLabel.includes(inputText);
 
 		return match;
 	}
@@ -192,19 +149,93 @@ class Select extends Component {
 		return comparison;
 	}
 
-	handleFocus() {
+	// Event Functions
+	clickOption(label, value) {
+		let newlyFilteredResults = this.updateResults(value);
+
 		this.setState({
-			optionsVisibile: true,
+			value: value,
+			selectedOption: {
+				label: label,
+				value: value,
+			},
+			optionsVisible: false,
+			overOptions: false,
 		});
 	}
 
-	handleBlur() {
+	changeText(event) {
+		let inputText = event.target.value;
+
 		this.setState({
-			optionsVisibile: false,
+			value: inputText,
+		});
+
+		let firstMatchingValue = this.getFirstMatchOnType(inputText);
+		this.updateResults(firstMatchingValue, inputText);
+	}
+
+	// Keyboard Input 
+	handleKeyPress(event) {
+		if (event.key === 'Enter' && this.state.optionsVisible) {
+			this.handleEnterKey();
+		}
+		if (event.key === 'ArrowUp' && this.state.optionsVisible) {
+			this.handleArrowKey('up');
+		}
+		if (event.key === 'ArrowDown' && this.state.optionsVisible) {
+			this.handleArrowKey('down');
+		}
+	}
+
+	handleArrowKey(direction) {
+		let offset = (direction === 'up') ? -1: 1;
+		let newIndex = (this.state.highlightedIndex + offset)%this.state.resultLength;
+		this.setState({
+			highlightedIndex: newIndex,
+		});
+		this.updateResults(this.state.selectedOption);
+	}
+
+	handleEnterKey() {
+		this.setState({
+			value: this.state.data[this.state.highlightedIndex].label,
+			selected: this.state.highlightedOption.value,
+			optionsVisible: false,
+			currentlyEngaged: false,
+		});
+		this.updateResults(this.state.data[this.state.highlightedIndex].value);
+	}
+
+	handleTextMouseDown() {
+		this.setState({
+			optionsVisible: true,
+			currentlyEngaged: true,
 		});
 	}
-	handleMouseOut() {
-		console.log("leaving");
+
+	handleTextBlur() {
+		this.setState({
+			optionsVisible: this.state.overOptions&&this.state.currentlyEngaged,
+		});
+	}
+
+	handleOptionsMouseOver() {
+		this.setState({
+			overOptions: true,
+		});
+	}
+
+	handleOptionsMouseOut() {
+		this.setState({
+			overOptions: false,
+		});
+	}
+
+	handleOptionHover(index) {
+		this.setState({
+			highlightedIndex: index,
+		});	
 	}
 
 	render() {
@@ -213,22 +244,41 @@ class Select extends Component {
 				backgroundColor: 'white',
 				width: '320pt',
 			}}
-			onFocus={this.handleFocus}
-			onMouseLeave={this.handleBlur}>
-			
+			onBlur={this.handleTextBlur}
+			onKeyUp={this.handleKeyPress}>
 				<div className='select-grid'>
 					<div className='select-input'>	
-						<input type='text' placeholder={this.props.placeholder} 
-							onChange={this.onChange} value={this.state.value}
+						<input 
+							type='text' 
+							value={this.state.value}
+							placeholder={this.props.placeholder} 
+							onChange={this.changeText} 
+							onMouseDown={this.handleTextMouseDown}
 						/>
 					</div>
 					<div className='select-caret'>
 						<DropdownCaret></DropdownCaret>
 					</div>
 				</div>
-				<div className='select-results'>
+				<div className='select-results'
+					onMouseOver={this.handleOptionsMouseOver}
+					onMouseOut={this.handleOptionsMouseOut}>
 					
-					{this.state.optionsVisibile && this.state.filteredResultsMarkup}
+					{
+						this.state.optionsVisible && 
+						this.state.data.map(({value, label, isHovered, isVisible}, index) => 
+							<Option 
+								value={value} 
+								key={value} 
+								label={label} 
+								index={index}
+								isHovered={this.state.highlightedIndex === index} 
+								isVisible={isVisible}
+								onClick={this.clickOption}
+								onMouseEnter={this.handleOptionHover}>
+							</Option>
+						)
+					}
 				</div>
 			</div>
 		);
