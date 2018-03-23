@@ -1,0 +1,14 @@
+.error {
+	background-color: #FF656B;
+	color: white;
+	height: 50pt;
+	min-width: 100pt;
+}
+
+.error p {
+	margin: 0pt;
+	padding: 0pt 10pt;
+	white-space: nowrap;
+	text-align: center;
+	line-height: 50pt;
+}

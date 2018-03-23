@@ -2,33 +2,26 @@ import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import DropdownCaret from './components/dropdownCaret';
 import Option from './components/option';
+import ErrorMessage from './components/ErrorMessage/errorMessage';
+import states from './data/states';
 import './select.css';
 
 let propTypes = {
 	placeholder: PropTypes.string,
 	data: PropTypes.array,
 	selected: PropTypes.string,
-	testing: PropTypes.bool,
 	name: PropTypes.string,
 	context: PropTypes.string,
+	isValid: PropTypes.bool,
+	errorMessage: PropTypes.string,
 };
 let defaultProps = {
 	placeholder: 'Select',
 	name: 'Select',
 	context: 'select',
-	data: [
-		{label: 'Virginia', value:'VA'},
-		{label: 'Florida', value:'FL'},
-		{label: 'Pennsylvania', value:'PA'},
-		{label: 'California', value:'CA'},
-		{label: 'Oregon', value:'OR'},
-		{label: 'Washington', value:'WA'},
-		{label: 'Montana', value:'MO'},
-		{label: 'Idaho', value:'ID'},
-		{label: 'Wyoming', value:'WY'},
-		{label: 'Utah', value:'UT'},
-	],
-	testing: false,
+	data: states,
+	isValid: true,
+	errorMessage: 'This field is invalid',
 };
 
 class Select extends Component {
@@ -47,7 +40,6 @@ class Select extends Component {
 				value: undefined,
 				label: undefined,
 			},
-			isValid: true,
 			isFocused: false,
 			resultLength: 0,
 		};
@@ -67,7 +59,6 @@ class Select extends Component {
 	}
 	// Lifecycle Hooks
 	componentWillMount() {
-		
 		let data = this.props.data.map((element, index) => {
 			element.isVisible = true;
 			element.isHovered = this.props.selected.value === element.value;
@@ -76,8 +67,8 @@ class Select extends Component {
 		});
 
 		this.setState({
-			...this.props,
 			resultLength: data.length,
+			errorMessage: this.props.errorMessage,
 			data: data,
 		});
 	}
@@ -159,6 +150,7 @@ class Select extends Component {
 		this.state.data.forEach(({label}) => {
 			isValid = isValid || (this.state.selectedOption.label === label);
 		});
+		
 		this.setState({
 			value: selectedLabel,
 			selectedOption: {
@@ -223,23 +215,9 @@ class Select extends Component {
 	}
 
 	handleTextBlur() {
-		let isValid = false;
-		this.state.data.forEach(({label}) => {
-			isValid = isValid || (this.state.selectedOption.label === label);
-			console.log({
-				'this.state.selectedOption.label': this.state.selectedOption.label,
-				label: label,
-			});
-		});
-		let optionsVisible = this.state.overOptions&&this.state.currentlyEngaged;
-		let placeholder = this.props.placeholder;
-		if (optionsVisible) {
-			placeholder = '';
-		}
+
 		this.setState({
-			optionsVisible: optionsVisible,
-			placeholder: placeholder,
-			isValid: isValid,
+			optionsVisible: this.state.overOptions&&this.state.currentlyEngaged,
 		});
 	}
 
@@ -263,14 +241,11 @@ class Select extends Component {
 
 	render() {
 		return (
-			<div style={{
-				backgroundColor: 'white',
-				width: '320pt',
-			}}
-			onBlur={this.handleTextBlur}
-			onKeyUp={this.handleKeyPress}>
-				<div className='select-grid'>
-					<div className='select-input'>	
+			<div className='select input grid form-input'
+				onBlur={this.handleTextBlur}
+				onKeyUp={this.handleKeyPress}>
+				<div className='input-container grid'>
+					<div className='input-area'>
 						{(this.state.optionsVisible || this.state.value.length > 0) &&
 						<label htmlFor={`dropdown-input${this.props.name}`}>{this.props.name}</label>
 						}
@@ -278,22 +253,30 @@ class Select extends Component {
 							type='text' 
 							id={`dropdown-input${this.props.name}`}
 							value={this.state.value}
-							placeholder={this.state.placeholder} 
+							placeholder={!this.state.optionsVisible ? this.props.placeholder: ''} 
 							onChange={this.changeText} 
 							onMouseDown={this.handleTextMouseDown}
 						/>
+						
 					</div>
-					<div className='select-caret'>
+					<div className='status-icon-area'>
 						<DropdownCaret
 							fill={this.state.optionsVisible ? '#59A5F7': '#D8D8D8'}
 						>
 						</DropdownCaret>
 					</div>
+					
+				</div>
+				<div className='error-message'>
+					{ !this.props.isValid &&
+						<ErrorMessage
+							errorMessage={this.state.errorMessage}>
+						</ErrorMessage>
+					}
 				</div>
 				<div className='select-results'
 					onMouseOver={this.handleOptionsMouseOver}
 					onMouseOut={this.handleOptionsMouseOut}>
-					
 					{
 						this.state.optionsVisible && 
 						this.state.data.map(({value, label, isHovered, isVisible}, index) => 
@@ -308,10 +291,6 @@ class Select extends Component {
 								onMouseEnter={this.handleOptionHover}>
 							</Option>
 						)
-					}
-					{
-						false &&
-						<h1>invalid yo</h1>
 					}
 				</div>
 			</div>
