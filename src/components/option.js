@@ -26,7 +26,7 @@ const Option = ({onClick, onMouseEnter, value, label, isHovered, isVisible, inde
 		onMouseEnter(index);
 	};
 	let handleClick= () => {
-		onClick(value, label, index);
+		onClick(label, value);
 	};
 	return (
 		isVisible && 

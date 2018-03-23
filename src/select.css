@@ -18,6 +18,7 @@ body {
 
 .select-input {
 	grid-area: input;
+	align-self: center;
 }
 
 .select-input input {
@@ -64,4 +65,24 @@ li.selected {
 ul {
 	padding: 0pt;
 	margin: 0pt;
+}
+
+label {
+	display: block;
+	font-weight: 200;
+	font-size: 10pt;
+	color: #9b9b9b;
+}
+input {
+	font-size: 14pt;
+	font-weight: 250;
+	color: #141414;
+	border: none;
+	padding:0px;
+	width: 100%;
+}
+.select-grid {
+	width: 300pt;
+	height: 30pt;
+	padding: 10pt;
 }

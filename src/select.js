@@ -9,9 +9,13 @@ let propTypes = {
 	data: PropTypes.array,
 	selected: PropTypes.string,
 	testing: PropTypes.bool,
+	name: PropTypes.string,
+	context: PropTypes.string,
 };
 let defaultProps = {
 	placeholder: 'Select',
+	name: 'Select',
+	context: 'select',
 	data: [
 		{label: 'Virginia', value:'VA'},
 		{label: 'Florida', value:'FL'},
@@ -35,20 +39,17 @@ class Select extends Component {
 			data: [],
 			// Dom/event state
 			optionsVisible: false,
-			currentlyEngaged: false,
+			engageOnce: false,
 			// Stored values
 			value: '',
-			highlightedOption: {
-				value: undefined,
-				label: undefined,
-			},
 			highlightedIndex: 0,
 			selectedOption: {
 				value: undefined,
 				label: undefined,
 			},
+			isValid: true,
+			isFocused: false,
 			resultLength: 0,
-			
 		};
 
 		this.changeText = this.changeText.bind(this);
@@ -66,12 +67,12 @@ class Select extends Component {
 	}
 	// Lifecycle Hooks
 	componentWillMount() {
-		let data = [];
-		this.props.data.map((element, index) => {
+		
+		let data = this.props.data.map((element, index) => {
 			element.isVisible = true;
 			element.isHovered = this.props.selected.value === element.value;
 			element.index = index;
-			data.push(element);
+			return element;
 		});
 
 		this.setState({
@@ -107,8 +108,8 @@ class Select extends Component {
 	updateResults(newSelectedValue, inputText) {
 		let data = this.state.data;
 		let resultLength = 0;
-		data.map((element, i) => {
-			let {label, value, isVisible, isHovered, index} = element;
+		data.forEach((element, i) => {
+			let {label, value, index} = element;
 			let match = true;
 
 			if (inputText) {
@@ -119,6 +120,7 @@ class Select extends Component {
 			element.isHovered = (this.state.highlightedIndex === index);
 			element.isVisible = match;
 			resultLength += 1*match;
+			
 		});
 		this.setState({
 			data: data,
@@ -151,14 +153,19 @@ class Select extends Component {
 
 	// Event Functions
 	clickOption(label, value) {
-		let newlyFilteredResults = this.updateResults(value);
-
+		this.updateResults(value);
+		let isValid = false;
+		let selectedLabel = label;
+		this.state.data.forEach(({label}) => {
+			isValid = isValid || (this.state.selectedOption.label === label);
+		});
 		this.setState({
-			value: value,
+			value: selectedLabel,
 			selectedOption: {
-				label: label,
+				label: selectedLabel,
 				value: value,
 			},
+			isValid: isValid,
 			optionsVisible: false,
 			overOptions: false,
 		});
@@ -200,7 +207,7 @@ class Select extends Component {
 	handleEnterKey() {
 		this.setState({
 			value: this.state.data[this.state.highlightedIndex].label,
-			selected: this.state.highlightedOption.value,
+			selected: this.state.data[this.state.highlightedIndex].value,
 			optionsVisible: false,
 			currentlyEngaged: false,
 		});
@@ -210,13 +217,29 @@ class Select extends Component {
 	handleTextMouseDown() {
 		this.setState({
 			optionsVisible: true,
+			placeholder: '',
 			currentlyEngaged: true,
 		});
 	}
 
 	handleTextBlur() {
+		let isValid = false;
+		this.state.data.forEach(({label}) => {
+			isValid = isValid || (this.state.selectedOption.label === label);
+			console.log({
+				'this.state.selectedOption.label': this.state.selectedOption.label,
+				label: label,
+			});
+		});
+		let optionsVisible = this.state.overOptions&&this.state.currentlyEngaged;
+		let placeholder = this.props.placeholder;
+		if (optionsVisible) {
+			placeholder = '';
+		}
 		this.setState({
-			optionsVisible: this.state.overOptions&&this.state.currentlyEngaged,
+			optionsVisible: optionsVisible,
+			placeholder: placeholder,
+			isValid: isValid,
 		});
 	}
 
@@ -248,16 +271,23 @@ class Select extends Component {
 			onKeyUp={this.handleKeyPress}>
 				<div className='select-grid'>
 					<div className='select-input'>	
+						{(this.state.optionsVisible || this.state.value.length > 0) &&
+						<label htmlFor={`dropdown-input${this.props.name}`}>{this.props.name}</label>
+						}
 						<input 
 							type='text' 
+							id={`dropdown-input${this.props.name}`}
 							value={this.state.value}
-							placeholder={this.props.placeholder} 
+							placeholder={this.state.placeholder} 
 							onChange={this.changeText} 
 							onMouseDown={this.handleTextMouseDown}
 						/>
 					</div>
 					<div className='select-caret'>
-						<DropdownCaret></DropdownCaret>
+						<DropdownCaret
+							fill={this.state.optionsVisible ? '#59A5F7': '#D8D8D8'}
+						>
+						</DropdownCaret>
 					</div>
 				</div>
 				<div className='select-results'
@@ -278,6 +308,10 @@ class Select extends Component {
 								onMouseEnter={this.handleOptionHover}>
 							</Option>
 						)
+					}
+					{
+						false &&
+						<h1>invalid yo</h1>
 					}
 				</div>
 			</div>
